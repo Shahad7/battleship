@@ -1,0 +1,19 @@
+{
+  "name": "battleship",
+  "version": "1.0.0",
+  "description": "remake of the classic battleship game to practice TDD",
+  "main": "main.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Shahad7/battleship.git"
+  },
+  "author": "shahad7",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shahad7/battleship/issues"
+  },
+  "homepage": "https://github.com/Shahad7/battleship#readme"
+}
