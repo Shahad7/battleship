@@ -1,4 +1,4 @@
-const { ship, gameBoard } = require('./main.js');
+const { ship, gameBoard, player, bot } = require('./main.js');
 
 test('ship damage', () => {
 	let carrier = ship(5);
@@ -118,8 +118,7 @@ test('reporting ships status', () => {
 	let carrier = ship(5);
 	carrier.hit();
 	carrier.hit();
-	testingBoard.addShips(destroyer);
-	testingBoard.addShips(carrier);
+	testingBoard.addShips([destroyer, carrier]);
 	expect(testingBoard.reportStatus()).toBe(false);
 });
 
@@ -136,7 +135,24 @@ test('reporting ships status 2', () => {
 	carrier.hit();
 	carrier.hit();
 	carrier.hit();
-	testingBoard.addShips(destroyer);
-	testingBoard.addShips(carrier);
+	testingBoard.addShips([destroyer, carrier]);
 	expect(testingBoard.reportStatus()).toBe(true);
+});
+
+test("is bot's move valid?", () => {
+	let Bot = bot();
+	let board = [
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', 'm', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', 's', 's', 's', 's'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+	];
+	let [x, y] = Bot.makeMove(board);
+	expect(board[x][y] == 's' || board[x][y] == '_').toBeTruthy();
 });
