@@ -3,8 +3,9 @@ const ship = (len, ntn) => {
 	let notation = ntn;
 	let parts = [];
 	let hits = 0;
-	const isSunk = () => (length == hits ? true : false);
+	const isSunk = () => (length <= getHits() ? true : false);
 	const hit = () => {
+		//alert('got hit');
 		hits++;
 	};
 	const getHits = () => hits;
@@ -19,20 +20,34 @@ const ship = (len, ntn) => {
 	};
 };
 
-const gameBoard = () => {
-	//  prettier-ignore
-	let gameBoard = [
-		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-        ['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-        ['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-        ['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-        ['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-	    ['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-	    ['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
-		['_', '_', '_', '_', '_', '_', '_', '_', '_', '_']
-	];
+const gameBoard = (player) => {
+	let gameBoard;
+	if (player == 'human')
+		gameBoard = [
+			['c2', '_', 'c3', 'c3', 'c3', '_', 'd5', '_', 'd2', 'd2'],
+			['c2', '_', '_', '_', '_', '_', 'd5', '_', '_', '_'],
+			['c2', '_', '_', '_', '_', '_', '_', '_', '_', 'b1'],
+			['_', '_', '_', 'b2', 'b2', 'b2', 'b2', '_', '_', 'b1'],
+			['_', '_', '_', '_', '_', '_', '_', '_', '_', 'b1'],
+			['_', '_', '_', '_', '_', '_', '_', '_', '_', 'b1'],
+			['_', 'c1', 'c1', 'c1', '_', 'd1', 'd1', '_', '_', '_'],
+			['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+			['_', '_', '_', '_', '_', '_', '_', '_', '_', 'd4'],
+			['c', 'c', 'c', 'c', 'c', '_', 'd3', 'd3', '_', 'd4'],
+		];
+	else
+		gameBoard = [
+			['b2', '_', '_', 'c2', '_', '_', 'b1', 'b1', 'b1', 'b1'],
+			['b2', '_', '_', 'c2', '_', '_', '_', '_', '_', '_'],
+			['b2', '_', '_', 'c2', '_', '_', '_', '_', '_', '_'],
+			['b2', '_', '_', '_', '_', '_', '_', 'd5', '_', '_'],
+			['_', '_', 'd1', 'd1', '_', 'd2', '_', 'd5', '_', 'c1'],
+			['_', '_', '_', '_', '_', 'd2', '_', '_', '_', 'c1'],
+			['c3', 'c3', 'c3', '_', '_', '_', '_', '_', '_', 'c1'],
+			['_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+			['d3', '_', '_', 'd4', '_', '_', '_', '_', '_', '_'],
+			['d3', '_', '_', 'd4', '_', 'c', 'c', 'c', 'c', 'c'],
+		];
 
 	let ships = {};
 	let shipNotations = [
@@ -42,10 +57,6 @@ const gameBoard = () => {
 		'c1',
 		'c2',
 		'c3',
-		's1',
-		's2',
-		's3',
-		's4',
 		'd1',
 		'd2',
 		'd3',
@@ -54,6 +65,7 @@ const gameBoard = () => {
 	];
 
 	const hitShip = (ship) => {
+		//alert(ship);
 		ships[ship].hit();
 	};
 
@@ -62,8 +74,8 @@ const gameBoard = () => {
 		let [x, y] = coordinates;
 
 		if (shipNotations.includes(board[x][y])) {
-			board[x][y] = 'h';
 			hitShip(board[x][y]);
+			board[x][y] = 'h';
 		} else board[x][y] = 'm';
 
 		return board;
@@ -149,8 +161,12 @@ const gameBoard = () => {
 	// reports if whether all the ships are sunk
 	const reportStatus = () => {
 		for (let ship in ships) {
-			if (!ships[ship].isSunk()) return false;
+			if (!ships[ship].isSunk()) {
+				//alert('remains');
+				return false;
+			}
 		}
+		alert('none');
 		return true;
 	};
 
@@ -163,6 +179,7 @@ const gameBoard = () => {
 		setBoard,
 		getBoard,
 		addShips,
+		ships,
 	};
 };
 
@@ -181,7 +198,7 @@ const Bot = () => {
 			x = Math.floor(Math.random() * 10);
 			y = Math.floor(Math.random() * 10);
 		} while (board[x][y] == 'h' || board[x][y] == 'm');
-
+		//alert([x, y + 'bot']);
 		return [x, y];
 	};
 
@@ -192,32 +209,23 @@ const Bot = () => {
 
 const Infos = (() => {
 	let move = [];
-	let start = false;
 	const getMove = () => move;
 	const setMove = (mv) => {
 		move = mv;
 	};
-	const getStart = () => {
-		return start;
-	};
 
-	const initialize = () => {
-		start = !start;
-		game = makeGame();
-		game.gameLoop();
-	};
-	return { getMove, setMove, getStart, initialize };
+	return { getMove, setMove };
 })();
 
-const makeGame = () => {
+const game = (() => {
 	let turn = 0;
 	let gameOver = false;
 	let player = Player();
 	let bot = Bot();
 	let winner, move;
 
-	let playerOcean = gameBoard();
-	let botOcean = gameBoard();
+	let playerOcean = gameBoard('human');
+	let botOcean = gameBoard('bot');
 	//Milton Bradley version of rules for ships
 	let carrier = ship(5, 'c');
 	let battleship1 = ship(4, 'b1');
@@ -225,10 +233,6 @@ const makeGame = () => {
 	let cruiser1 = ship(3, 'c1');
 	let cruiser2 = ship(3, 'c2');
 	let cruiser3 = ship(3, 'c3');
-	let submarine1 = ship(3, 's1');
-	let submarine2 = ship(3, 's2');
-	let submarine3 = ship(3, 's3');
-	let submarine4 = ship(3, 's4');
 	let destroyer1 = ship(2, 'd1');
 	let destroyer2 = ship(2, 'd2');
 	let destroyer3 = ship(2, 'd3');
@@ -242,10 +246,6 @@ const makeGame = () => {
 		cruiser1,
 		cruiser2,
 		cruiser3,
-		submarine1,
-		submarine2,
-		submarine3,
-		submarine4,
 		destroyer1,
 		destroyer2,
 		destroyer3,
@@ -259,10 +259,6 @@ const makeGame = () => {
 		cruiser1,
 		cruiser2,
 		cruiser3,
-		submarine1,
-		submarine2,
-		submarine3,
-		submarine4,
 		destroyer1,
 		destroyer2,
 		destroyer3,
@@ -275,27 +271,29 @@ const makeGame = () => {
 		if (!gameOver) {
 			if (turn == 0) {
 				//player's turn
+
 				move = Infos.getMove();
 				if (move != null) {
-					alert(move);
+					//alert(move);
 					botOcean.setBoard(botOcean.receiveAttacks(move));
 					Infos.setMove(null);
 				}
 				turn = 1;
-				alert('calling');
 				DOM.disableOcean();
 				if (botOcean.reportStatus()) {
 					gameOver = true;
 					winner = 'player';
+					alert('somebody won');
 				}
+				DOM.markMove(move, 'human');
+				gameLoop();
 			} else if (turn == 1) {
 				//bot's turn
-				playerOcean.setBoard(
-					playerOcean.receiveAttacks(
-						bot.makeMove(playerOcean.getBoard())
-					)
-				);
+				move = bot.makeMove(playerOcean.getBoard());
+				playerOcean.setBoard(playerOcean.receiveAttacks(move));
 				turn = 0;
+				DOM.enableOcean();
+				DOM.markMove(move, 'bot');
 
 				if (botOcean.reportStatus()) {
 					gameOver = true;
@@ -306,12 +304,14 @@ const makeGame = () => {
 	};
 
 	const getGameStatus = () => gameOver;
-	return { gameLoop, getGameStatus };
-};
+	return { gameLoop, getGameStatus, playerOcean, botOcean };
+})();
 
+/* istanbul ignore next */
 const DOM = (function () {
 	//normal variables
 	let cellId, x, y, xy;
+	let start = false;
 
 	//DOM elements
 	const ocean1 = document.querySelector('.ocean1');
@@ -338,31 +338,84 @@ const DOM = (function () {
 					y = 9;
 				}
 				Infos.setMove([x, y]);
-				markMove([x, y]);
-				if (!Infos.getStart()) Infos.initialize();
-				if (!game.getGameStatus) game.gameLoop();
+
+				if (!game.getGameStatus()) game.gameLoop();
 			});
 	});
-
-	const markMove = (coordinates) => {
+	//need one for bot too
+	const markMove = (coordinates, player) => {
 		let [x, y] = coordinates,
-			node;
+			node,
+			str;
+		//alert([x, y]);
+		str = calcPos([x, y]);
+		//alert(str);
+		if (player == 'human') {
+			node = document.getElementById(`2cell${str}`);
+			if (game.botOcean.getBoard()[x][y] == 'h') {
+				node.textContent = '❌';
+				node.style.color = 'red';
+			} else {
+				node.textContent = '.';
+				node.style.color = 'black';
+			}
+		} else {
+			node = document.getElementById(`1cell${str}`);
+			if (game.playerOcean.getBoard()[x][y] == 'h') {
+				node.textContent = '❌';
+				node.style.color = 'red';
+			} else {
+				node.textContent = '.';
+				node.style.color = 'black';
+			}
+		}
+		node.style.pointerEvents = 'none';
+	};
+
+	const calcPos = (coordinates) => {
+		let [x, y] = coordinates;
 		let str = (x * 10 + y + 1).toString();
 		if (x == 0) str = '0' + (y + 1).toString();
 		if (x == 0 && y == 9) str = '10';
-		node = document.getElementById(`2cell${str}`);
-		node.style.pointerEvents = 'none';
-		node.style.borderColor = 'red';
+		return str;
 	};
-
 	const disableOcean = () => {
-		ocean2.style.borderColor = 'blue';
-		ocean2.style.backgroundColor = 'blue';
-		ocean2.disabled = true;
-		alert('here');
+		ocean2.style.pointerEvents = 'none';
+		//alert('disabled');
 	};
 
-	return { markMove, disableOcean };
+	const enableOcean = () => {
+		ocean2.style.pointerEvents = 'auto';
+		//alert('enabled');
+	};
+
+	const renderOcean = (player) => {
+		let board;
+		let str, node;
+		if (player == 'human') {
+			board = game.playerOcean.getBoard();
+			for (x in board)
+				for (y in board) {
+					str = calcPos([parseInt(x), parseInt(y)]);
+					node = document.getElementById(`1cell${str}`);
+					if (board[x][y] != '_') node.style.backgroundColor = 'blue';
+					//node.textContent = board[x][y];
+				}
+		} else {
+			board = game.botOcean.getBoard();
+			for (x in board)
+				for (y in board) {
+					str = calcPos([parseInt(x), parseInt(y)]);
+					node = document.getElementById(`2cell${str}`);
+					if (board[x][y] != '_') node.style.backgroundColor = 'blue';
+					//node.textContent = board[x][y];
+				}
+		}
+	};
+	renderOcean('human');
+	//renderOcean('bot');
+
+	return { markMove, disableOcean, enableOcean, renderOcean };
 })();
 
-//module.exports = { ship, gameBoard, Player, Bot };
+module.exports = { ship, gameBoard, Player, Bot };

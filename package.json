@@ -4,7 +4,7 @@
   "description": "remake of the classic battleship game to practice TDD",
   "main": "main.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest --env=jsdom"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/Shahad7/battleship/issues"
   },
-  "homepage": "https://github.com/Shahad7/battleship#readme"
+  "homepage": "https://github.com/Shahad7/battleship#readme",
+  "dependencies": {
+    "jest": "^29.7.0",
+    "jsdom": "^22.1.0"
+  },
+  "devDependencies": {
+    "jest-environment-jsdom": "^29.7.0"
+  }
 }
