@@ -1,7 +1,6 @@
 const ship = (len, ntn) => {
 	let length = len;
 	let notation = ntn;
-	let parts = [];
 	let hits = 0;
 	const isSunk = () => (length <= getHits() ? true : false);
 	const hit = () => {
@@ -12,7 +11,6 @@ const ship = (len, ntn) => {
 
 	return {
 		length,
-		parts,
 		notation,
 		getHits,
 		isSunk,
@@ -389,17 +387,75 @@ const DOM = (function () {
 		//alert('enabled');
 	};
 
+	//drag n drop api
+	const drag = (e) => {
+		e.dataTransfer.setData('id', e.target.id);
+	};
+
+	const drop = (e) => {
+		e.preventDefault();
+		let id = e.dataTransfer.getData('id');
+		//console.log(e.target);
+		e.target.appendChild(document.getElementById(id));
+	};
+
+	oceanCells.forEach((element) => {
+		if (element.parentNode.className == 'ocean1')
+			element.addEventListener('dragover', (e) => {
+				e.preventDefault();
+				//alert(e.target.id);
+			});
+		element.addEventListener('drop', (e) => {
+			drop(e);
+			e.preventDefault();
+		});
+	});
+
 	const renderOcean = (player) => {
-		let board;
-		let str, node;
+		let board, str, node, nodeId;
+		let x, y;
+		let ship, length, width, size;
 		if (player == 'human') {
 			board = game.playerOcean.getBoard();
-			for (x in board)
-				for (y in board) {
-					str = calcPos([parseInt(x), parseInt(y)]);
-					node = document.getElementById(`1cell${str}`);
-					if (board[x][y] != '_') node.style.backgroundColor = 'blue';
-					//node.textContent = board[x][y];
+			for (i in board)
+				for (j in board) {
+					x = parseInt(i);
+					y = parseInt(j);
+					str = calcPos([x, y]);
+					nodeId = `1cell${str}`;
+					node = document.getElementById(nodeId);
+
+					if (
+						board[x][y] != '_' &&
+						(board[x][y - 1] == '_' || y == 0) &&
+						(x == 0 || board[x - 1][y] == '_') &&
+						(x == 9 ||
+							board[x + 1][y] == '_' ||
+							board[x][y + 1] == '_' ||
+							y == 9)
+					) {
+						ship = document.createElement('div');
+						ship.setAttribute('draggable', 'true');
+						ship.setAttribute('id', 's' + nodeId);
+						ship.addEventListener('dragstart', (e) => {
+							drag(e);
+						});
+						ship.classList.add('ship');
+						size = game.playerOcean.ships[board[x][y]].length;
+						if (
+							(y == 9 && board[x + 1][y] != '_') ||
+							board[x][y + 1] == '_'
+						) {
+							width = 32;
+							height = size * 32;
+						} else {
+							height = 32;
+							width = size * 32;
+						}
+						ship.style.height = height + 'px';
+						ship.style.minWidth = width + 'px';
+						node.appendChild(ship);
+					}
 				}
 		} else {
 			board = game.botOcean.getBoard();

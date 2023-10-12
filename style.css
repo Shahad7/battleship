@@ -37,12 +37,6 @@ body {
 	height: 100%;
 }
 
-.ocean-cell {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-
 .ocean1,
 .ocean2 {
 	display: grid;
@@ -53,10 +47,18 @@ body {
 }
 
 .ocean-cell {
+	display: grid;
+	justify-content: start;
+	align-items: start;
 	height: 30px;
 	background-color: #f3efeb;
 	width: 30px;
-	border: solid rgba(0, 0, 0, 0.664) 0.1px;
+	border: solid rgba(0, 0, 0, 0.664) 1px;
+}
+
+.ship{
+	background-color: red;
+	z-index: 1;
 }
 
 .footer {
@@ -64,3 +66,4 @@ body {
 	border-top: solid #1d4ed8 2px;
 	grid-area: 3/1/-1/-1;
 }
+
