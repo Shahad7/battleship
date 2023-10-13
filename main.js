@@ -79,20 +79,30 @@ const gameBoard = (player) => {
 		return board;
 	};
 
-	const hasOverlappingNeighbors = (coordinates) => {
+	const hasOverlappingNeighbors = (coordinates, size = 0) => {
 		let [x, y] = coordinates;
-		let offsets = [
-			[0, -1],
-			[0, 1],
-			[1, 0],
-			[0, 1],
-			[1, -1],
-			[1, 1],
-			[-1, -1],
-			[-1, 1],
-		];
+		let offsets;
+		if (size != 2)
+			offsets = [
+				[0, -1],
+				[0, 1],
+				[1, 0],
+				[-1, 0],
+				[1, -1],
+				[1, 1],
+				[-1, -1],
+				[-1, 1],
+			];
+		else
+			offsets = [
+				[0, 1],
+				[1, 0],
+				[1, -1],
+				[1, 1],
+			];
+
 		let x$, y$;
-		offsets.forEach((element) => {
+		for (element of offsets) {
 			x$ = x + element[0];
 			y$ = y + element[1];
 			if (
@@ -100,11 +110,11 @@ const gameBoard = (player) => {
 				x$ >= 0 &&
 				y$ <= 9 &&
 				y$ >= 0 &&
-				gameBoard[x$][y$] == 's'
+				gameBoard[x$][y$] != '_'
 			) {
 				return 1;
 			}
-		});
+		}
 		return 0;
 	};
 
@@ -177,6 +187,7 @@ const gameBoard = (player) => {
 		setBoard,
 		getBoard,
 		addShips,
+		hasOverlappingNeighbors,
 		ships,
 	};
 };
@@ -308,8 +319,8 @@ const game = (() => {
 /* istanbul ignore next */
 const DOM = (function () {
 	//normal variables
-	let cellId, x, y, xy;
 	let start = false;
+	let pos;
 
 	//DOM elements
 	const ocean1 = document.querySelector('.ocean1');
@@ -319,23 +330,8 @@ const DOM = (function () {
 	oceanCells.forEach((element) => {
 		if (element.parentNode.className == 'ocean2')
 			element.addEventListener('click', () => {
-				cellId = element.getAttribute('id');
-				xy = parseInt(cellId.substring(5, 7));
-				xy$ = parseInt(cellId.substring(5, 8));
-				xy--;
-				if (xy$ != 100) {
-					if (xy <= 9) {
-						x = 0;
-						y = xy;
-					} else {
-						x = Math.floor(xy / 10);
-						y = xy % 10;
-					}
-				} else {
-					x = 9;
-					y = 9;
-				}
-				Infos.setMove([x, y]);
+				pos = calcBoardPos(element.getAttribute('id'));
+				Infos.setMove(pos);
 
 				if (!game.getGameStatus()) game.gameLoop();
 			});
@@ -370,6 +366,27 @@ const DOM = (function () {
 		node.style.pointerEvents = 'none';
 	};
 
+	const calcBoardPos = (id) => {
+		let xy, xy$, x, y;
+		let cellId = id;
+		xy = parseInt(cellId.substring(5, 7));
+		xy$ = parseInt(cellId.substring(5, 8));
+		xy--;
+		if (xy$ != 100) {
+			if (xy <= 9) {
+				x = 0;
+				y = xy;
+			} else {
+				x = Math.floor(xy / 10);
+				y = xy % 10;
+			}
+		} else {
+			x = 9;
+			y = 9;
+		}
+		return [x, y];
+	};
+
 	const calcPos = (coordinates) => {
 		let [x, y] = coordinates;
 		let str = (x * 10 + y + 1).toString();
@@ -394,9 +411,10 @@ const DOM = (function () {
 
 	const drop = (e) => {
 		e.preventDefault();
+
+		let target = e.target;
 		let id = e.dataTransfer.getData('id');
-		//console.log(e.target);
-		e.target.appendChild(document.getElementById(id));
+		target.appendChild(document.getElementById(id));
 	};
 
 	oceanCells.forEach((element) => {
@@ -410,6 +428,38 @@ const DOM = (function () {
 			e.preventDefault();
 		});
 	});
+
+	const rotate = (e) => {
+		let temp, target;
+		let board = game.playerOcean.getBoard().slice();
+		let ship = document.getElementById(e.target.id);
+		let node = ship.parentNode;
+		let [x, y] = calcBoardPos(node.getAttribute('id'));
+		let size = parseInt(ship.getAttribute('size'));
+		if (x != 9 && board[x + 1][y] != '_') {
+			if (
+				y == 9 ||
+				game.playerOcean.hasOverlappingNeighbors(
+					[x, y - 1 + size],
+					size
+				)
+			)
+				return;
+		} else {
+			if (
+				x == 9 ||
+				game.playerOcean.hasOverlappingNeighbors(
+					[x - 1 + size, y],
+					size
+				)
+			)
+				return;
+		}
+
+		temp = ship.style.minWidth;
+		ship.style.minWidth = ship.style.height;
+		ship.style.height = temp;
+	};
 
 	const renderOcean = (player) => {
 		let board, str, node, nodeId;
@@ -437,11 +487,16 @@ const DOM = (function () {
 						ship = document.createElement('div');
 						ship.setAttribute('draggable', 'true');
 						ship.setAttribute('id', 's' + nodeId);
+						ship.style.cursor = 'move';
+						ship.addEventListener('click', (e) => {
+							rotate(e);
+						});
 						ship.addEventListener('dragstart', (e) => {
 							drag(e);
 						});
 						ship.classList.add('ship');
 						size = game.playerOcean.ships[board[x][y]].length;
+						ship.setAttribute('size', size);
 						if (
 							(y == 9 && board[x + 1][y] != '_') ||
 							board[x][y + 1] == '_'
