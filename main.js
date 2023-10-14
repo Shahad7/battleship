@@ -4,7 +4,6 @@ const ship = (len, ntn) => {
 	let hits = 0;
 	const isSunk = () => (length <= getHits() ? true : false);
 	const hit = () => {
-		//alert('got hit');
 		hits++;
 	};
 	const getHits = () => hits;
@@ -63,12 +62,11 @@ const gameBoard = (player) => {
 	];
 
 	const hitShip = (ship) => {
-		//alert(ship);
 		ships[ship].hit();
 	};
 
 	const receiveAttacks = (coordinates) => {
-		let board = gameBoard.slice();
+		let board = JSON.parse(JSON.stringify(gameBoard));
 		let [x, y] = coordinates;
 
 		if (shipNotations.includes(board[x][y])) {
@@ -82,24 +80,17 @@ const gameBoard = (player) => {
 	const hasOverlappingNeighbors = (coordinates, size = 0) => {
 		let [x, y] = coordinates;
 		let offsets;
-		if (size != 2)
-			offsets = [
-				[0, -1],
-				[0, 1],
-				[1, 0],
-				[-1, 0],
-				[1, -1],
-				[1, 1],
-				[-1, -1],
-				[-1, 1],
-			];
-		else
-			offsets = [
-				[0, 1],
-				[1, 0],
-				[1, -1],
-				[1, 1],
-			];
+
+		offsets = [
+			[0, -1],
+			[0, 1],
+			[1, 0],
+			[-1, 0],
+			[1, -1],
+			[1, 1],
+			[-1, -1],
+			[-1, 1],
+		];
 
 		let x$, y$;
 		for (element of offsets) {
@@ -130,7 +121,7 @@ const gameBoard = (player) => {
 		}
 		if (direction == 1) {
 			for (let i = x; i < x + length; i++) {
-				if (gameBoard[i][y] != '_' || hasOverlappingNeighbors([x, i])) {
+				if (gameBoard[i][y] != '_' || hasOverlappingNeighbors([i, y])) {
 					return 1;
 				}
 			}
@@ -138,9 +129,24 @@ const gameBoard = (player) => {
 		}
 	};
 
+	const deleteMovedShip = (coordinates, length, direction) => {
+		let [x, y] = coordinates;
+		let board = gameBoard;
+		if (direction == 0) {
+			for (let i = y; i < y + length; i++) {
+				board[x][i] = '_';
+			}
+		}
+		if (direction == 1) {
+			for (let i = x; i < x + length; i++) {
+				board[i][y] = '_';
+			}
+		}
+	};
+
 	const placeShips = (coordinates, length, direction, ship) => {
 		let [x, y] = coordinates;
-		let board = gameBoard.slice();
+		let board = JSON.parse(JSON.stringify(gameBoard));
 		if (!isOverlapped(coordinates, length, direction)) {
 			if (direction == 0) {
 				for (let i = y; i < y + length; i++) {
@@ -170,15 +176,24 @@ const gameBoard = (player) => {
 	const reportStatus = () => {
 		for (let ship in ships) {
 			if (!ships[ship].isSunk()) {
-				//alert('remains');
 				return false;
 			}
 		}
-		alert('none');
 		return true;
 	};
 
 	const getBoard = () => gameBoard;
+
+	const eraseShipParts = (coordinates, dir, sz) => {
+		let direction = dir;
+		let size = sz;
+		let [x, y] = coordinates;
+		if (direction == 0) {
+			for (let i = y + 1; i <= size + y; i++) gameBoard[x][y] = '_';
+		} else if (direction == 1) {
+			for (let i = x + 1; i <= size + x; i++) gameBoard[x][y] = '_';
+		}
+	};
 
 	return {
 		reportStatus,
@@ -187,6 +202,8 @@ const gameBoard = (player) => {
 		setBoard,
 		getBoard,
 		addShips,
+		deleteMovedShip,
+		eraseShipParts,
 		hasOverlappingNeighbors,
 		ships,
 	};
@@ -207,7 +224,6 @@ const Bot = () => {
 			x = Math.floor(Math.random() * 10);
 			y = Math.floor(Math.random() * 10);
 		} while (board[x][y] == 'h' || board[x][y] == 'm');
-		//alert([x, y + 'bot']);
 		return [x, y];
 	};
 
@@ -283,7 +299,6 @@ const game = (() => {
 
 				move = Infos.getMove();
 				if (move != null) {
-					//alert(move);
 					botOcean.setBoard(botOcean.receiveAttacks(move));
 					Infos.setMove(null);
 				}
@@ -292,7 +307,7 @@ const game = (() => {
 				if (botOcean.reportStatus()) {
 					gameOver = true;
 					winner = 'player';
-					alert('somebody won');
+					DOM.announce(winner);
 				}
 				DOM.markMove(move, 'human');
 				gameLoop();
@@ -304,9 +319,10 @@ const game = (() => {
 				DOM.enableOcean();
 				DOM.markMove(move, 'bot');
 
-				if (botOcean.reportStatus()) {
+				if (playerOcean.reportStatus()) {
 					gameOver = true;
 					winner = 'bot';
+					DOM.announce(winner);
 				}
 			}
 		}
@@ -326,6 +342,21 @@ const DOM = (function () {
 	const ocean1 = document.querySelector('.ocean1');
 	const ocean2 = document.querySelector('.ocean2');
 	const oceanCells = document.querySelectorAll('.ocean-cell');
+	const startButton = document.querySelector('#start');
+	const replayButton = document.createElement('button');
+	replayButton.textContent = 'PLAY AGAIN';
+	replayButton.setAttribute('id', 'replay');
+	replayButton.style.marginLeft = '10px';
+	const announcement = document.getElementById('gameover');
+	const result = document.getElementById('result');
+
+	startButton.addEventListener('click', () => {
+		oceanCells.forEach((element) => {
+			if (element.parentNode.className == 'ocean1')
+				element.style.pointerEvents = 'none';
+		});
+		startButton.style.visibility = 'hidden';
+	});
 
 	oceanCells.forEach((element) => {
 		if (element.parentNode.className == 'ocean2')
@@ -336,31 +367,41 @@ const DOM = (function () {
 				if (!game.getGameStatus()) game.gameLoop();
 			});
 	});
+
+	const announce = (winner) => {
+		announcement.style.display = 'block';
+		result.textContent = `${winner.toUpperCase()} WON!`;
+		result.append(replayButton);
+	};
+
+	replayButton.addEventListener('click', () => {
+		location.assign('index.html');
+	});
 	//need one for bot too
 	const markMove = (coordinates, player) => {
 		let [x, y] = coordinates,
 			node,
 			str;
-		//alert([x, y]);
+
 		str = calcPos([x, y]);
-		//alert(str);
+
 		if (player == 'human') {
 			node = document.getElementById(`2cell${str}`);
 			if (game.botOcean.getBoard()[x][y] == 'h') {
-				node.textContent = '❌';
-				node.style.color = 'red';
+				node.style.zIndex = '2';
+				node.style.backgroundColor = 'rgb(225, 0, 0)';
 			} else {
-				node.textContent = '.';
-				node.style.color = 'black';
+				node.style.zIndex = '2';
+				node.style.backgroundColor = '#606060';
 			}
 		} else {
 			node = document.getElementById(`1cell${str}`);
 			if (game.playerOcean.getBoard()[x][y] == 'h') {
-				node.textContent = '❌';
-				node.style.color = 'red';
+				node.style.zIndex = '2';
+				node.style.backgroundColor = 'rgb(225, 0, 0)';
 			} else {
-				node.textContent = '.';
-				node.style.color = 'black';
+				node.style.zIndex = '2';
+				node.style.backgroundColor = '#606060';
 			}
 		}
 		node.style.pointerEvents = 'none';
@@ -396,17 +437,18 @@ const DOM = (function () {
 	};
 	const disableOcean = () => {
 		ocean2.style.pointerEvents = 'none';
-		//alert('disabled');
 	};
 
 	const enableOcean = () => {
 		ocean2.style.pointerEvents = 'auto';
-		//alert('enabled');
 	};
 
 	//drag n drop api
 	const drag = (e) => {
-		e.dataTransfer.setData('id', e.target.id);
+		let target = e.target;
+		let parent = e.target.parentNode;
+		e.dataTransfer.setData('id', target.id);
+		e.dataTransfer.setData('parent', parent);
 	};
 
 	const drop = (e) => {
@@ -414,14 +456,44 @@ const DOM = (function () {
 
 		let target = e.target;
 		let id = e.dataTransfer.getData('id');
-		target.appendChild(document.getElementById(id));
+		let board = game.playerOcean.getBoard();
+		let ship = document.getElementById(id);
+		let direction = parseInt(ship.getAttribute('direction'));
+		let parent = document.getElementById(e.dataTransfer.getData('parent'));
+		let oldCoordinates = calcBoardPos(ship.parentNode.getAttribute('id'));
+		let coordinates = calcBoardPos(target.id);
+		let notation = ship.getAttribute('notation');
+		let [x, y] = coordinates;
+		let size = parseInt(ship.getAttribute('size'));
+		game.playerOcean.deleteMovedShip(oldCoordinates, size, direction);
+		let returnedBoard = game.playerOcean.placeShips(
+			coordinates,
+			size,
+			direction,
+			notation
+		);
+
+		if (JSON.stringify(returnedBoard) === JSON.stringify(board)) {
+			game.playerOcean.setBoard(
+				game.playerOcean.placeShips(
+					oldCoordinates,
+					size,
+					direction,
+					notation
+				)
+			);
+			return;
+		} else {
+			target.appendChild(ship);
+			game.playerOcean.setBoard(returnedBoard);
+			game.playerOcean.deleteMovedShip(oldCoordinates, size, direction);
+		}
 	};
 
 	oceanCells.forEach((element) => {
 		if (element.parentNode.className == 'ocean1')
 			element.addEventListener('dragover', (e) => {
 				e.preventDefault();
-				//alert(e.target.id);
 			});
 		element.addEventListener('drop', (e) => {
 			drop(e);
@@ -431,34 +503,65 @@ const DOM = (function () {
 
 	const rotate = (e) => {
 		let temp, target;
-		let board = game.playerOcean.getBoard().slice();
+		let board = JSON.parse(JSON.stringify(game.playerOcean.getBoard()));
 		let ship = document.getElementById(e.target.id);
 		let node = ship.parentNode;
+		let direction = parseInt(ship.getAttribute('direction'));
 		let [x, y] = calcBoardPos(node.getAttribute('id'));
 		let size = parseInt(ship.getAttribute('size'));
+		game.playerOcean.deleteMovedShip([x, y], size, direction);
 		if (x != 9 && board[x + 1][y] != '_') {
 			if (
 				y == 9 ||
-				game.playerOcean.hasOverlappingNeighbors(
-					[x, y - 1 + size],
-					size
-				)
-			)
+				board[x][y - 1 + size] == undefined ||
+				game.playerOcean.hasOverlappingNeighbors([x, y - 1 + size])
+			) {
+				game.playerOcean.setBoard(
+					game.playerOcean.placeShips(
+						[x, y],
+						size,
+						parseInt(ship.getAttribute('direction')),
+						ship.getAttribute('notation')
+					)
+				);
+
 				return;
+			}
 		} else {
 			if (
 				x == 9 ||
-				game.playerOcean.hasOverlappingNeighbors(
-					[x - 1 + size, y],
-					size
-				)
-			)
+				board[x - 1 + size][y] == undefined ||
+				game.playerOcean.hasOverlappingNeighbors([x - 1 + size, y])
+			) {
+				game.playerOcean.setBoard(
+					game.playerOcean.placeShips(
+						[x, y],
+						size,
+						parseInt(ship.getAttribute('direction')),
+						ship.getAttribute('notation')
+					)
+				);
+
 				return;
+			}
 		}
 
 		temp = ship.style.minWidth;
 		ship.style.minWidth = ship.style.height;
 		ship.style.height = temp;
+		ship.setAttribute(
+			'direction',
+			!parseInt(ship.getAttribute('direction')) * 1
+		);
+
+		game.playerOcean.setBoard(
+			game.playerOcean.placeShips(
+				[x, y],
+				size,
+				parseInt(ship.getAttribute('direction')),
+				ship.getAttribute('notation')
+			)
+		);
 	};
 
 	const renderOcean = (player) => {
@@ -487,6 +590,7 @@ const DOM = (function () {
 						ship = document.createElement('div');
 						ship.setAttribute('draggable', 'true');
 						ship.setAttribute('id', 's' + nodeId);
+						ship.setAttribute('notation', board[x][y]);
 						ship.style.cursor = 'move';
 						ship.addEventListener('click', (e) => {
 							rotate(e);
@@ -503,12 +607,14 @@ const DOM = (function () {
 						) {
 							width = 32;
 							height = size * 32;
+							ship.setAttribute('direction', 1);
 						} else {
 							height = 32;
 							width = size * 32;
+							ship.setAttribute('direction', 0);
 						}
-						ship.style.height = height + 'px';
-						ship.style.minWidth = width + 'px';
+						ship.style.height = height - 2 + 'px';
+						ship.style.minWidth = width - 2 + 'px';
 						node.appendChild(ship);
 					}
 				}
@@ -526,7 +632,7 @@ const DOM = (function () {
 	renderOcean('human');
 	//renderOcean('bot');
 
-	return { markMove, disableOcean, enableOcean, renderOcean };
+	return { markMove, disableOcean, enableOcean, renderOcean, announce };
 })();
 
 module.exports = { ship, gameBoard, Player, Bot };

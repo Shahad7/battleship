@@ -10,14 +10,14 @@
 	</head>
 	<body>
 		<div class="body-container">
-			<div class="header">BATTLESHIP</div>
+			<div class="header"><div class="title">BATTLESHIP</div></div>
 			<div class="main-body">
 				<div class="board-container">
 					<div class="ocean1">
-						<div class="ocean-cell" id="1cell01"></div>
+						<div class="ocean-cell" id="1cell01">
+						</div>
 						<div class="ocean-cell" id="1cell02"></div>
 						<div class="ocean-cell" id="1cell03">
-							<div class="ship" draggable="true"></div>
 						</div>
 						<div class="ocean-cell" id="1cell04"></div>
 						<div class="ocean-cell" id="1cell05"></div>
@@ -221,7 +221,12 @@
 					</div>
 				</div>
 			</div>
-			<div class="footer">.</div>
+			<div class="footer"><button id="start">START</button>
+				<div id="gameover">
+					<p id="result">PLAYER WON!</p>
+					
+				</div>
+			</div>
 		</div>
 	</body>
 </html>
